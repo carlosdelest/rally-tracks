@@ -43,6 +43,8 @@
 {% set p_snapshot_rename_suffix = (snapshot_rename_suffix | default("") ) %}
 {% set p_worker_threads_enabled = (worker_threads_enabled | default(true))  %}
 
+{% set p_worker_threads_enabled = (worker_threads_enabled | default(true))  %}
+
 {% set es_version = "7.13.2" %}
 
 {% set p_integration_ratios = (integration_ratios | default({
