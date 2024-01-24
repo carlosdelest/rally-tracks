@@ -43,6 +43,7 @@
     "index": {
       "number_of_replicas": {{ number_of_replicas | default(0) }},
       "number_of_shards": {{ number_of_shards | default(1) }},
+      "store.direct_io": {{ use_direct_io | default(false) | tojson }},
       "analysis": {
         "filter": {
           "front_ngram": {
