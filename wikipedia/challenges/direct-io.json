@@ -26,8 +26,9 @@
       "operation": "refresh-after-index"
     },
     {
-      "name": "force-merge",
-      "operation": "force-merge"
+      "name": "force-merge-min-segments",
+      "operation": "force-merge",
+      "request-timeout": 7200
     },
     {
       "name": "refresh-after-force-merge",
@@ -46,22 +47,22 @@
     },
     {
       "parallel": {
-        "completed-by": "parallel-documents-indexing-query-string-search",
+        "completed-by": "parallel-big-merge",
         "tasks": [
           {
-            "name": "parallel-documents-indexing-bulk",
-            "operation": "parallel-documents-indexing",
-            "clients": {{ parallel_indexing_bulk_clients | default(1) | int }},
-            "warmup-time-period": {{ parallel_indexing_bulk_warmup_time_period | default(10) | int }},
-            "target-throughput": {{ parallel_indexing_bulk_target_throughput | default(1) | int }}
+            "name": "parallel-big-merge",
+            "operation": "force-merge",
+            "max-num-segments": {{ force_merge_max_num_segments | default(4) | int }},
+            "request-timeout": 7200,
+            "include-in-reporting": true
           },
           {
-            "name": "parallel-documents-indexing-query-string-search",
+            "name": "parallel-query-string-search",
             "operation": "query-string-search",
-            "clients": {{ parallel_indexing_search_clients | default(20) | int }},
-            "time-period": {{ parallel_indexing_search_time_period | default(300) | int }},
+            "clients": {{ parallel_big_merge_search_clients | default(20) | int }},
+            "time-period": {{ parallel_big_merge_search_time_period | default(7200) | int }},
             "warmup-time-period": {{ parallel_indexing_search_warmup_time_period | default(10) | int }}
-          }
+        }
         ]
       }
     }
