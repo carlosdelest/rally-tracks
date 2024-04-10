@@ -47,22 +47,18 @@
     },
     {
       "parallel": {
-        "completed-by": "parallel-big-merge",
         "tasks": [
-          {
-            "name": "parallel-big-merge",
-            "operation": "force-merge",
-            "max-num-segments": {{ force_merge_max_num_segments | default(4) | int }},
-            "request-timeout": 7200,
-            "include-in-reporting": true
-          },
           {
             "name": "parallel-query-string-search",
             "operation": "query-string-search",
             "clients": {{ parallel_big_merge_search_clients | default(20) | int }},
-            "time-period": {{ parallel_big_merge_search_time_period | default(7200) | int }},
-            "warmup-time-period": {{ parallel_indexing_search_warmup_time_period | default(10) | int }}
-        }
+          "time-period": {{ parallel_big_merge_search_time_period | default(7200) | int }},
+          "warmup-time-period": {{ parallel_indexing_search_warmup_time_period | default(10) | int }}
+          },
+          {
+            "name": "parallel-big-merge",
+            "operation": "force-merge-max-segments"
+          }
         ]
       }
     }

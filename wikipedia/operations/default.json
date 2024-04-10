@@ -29,7 +29,7 @@
   "bulk-size": {{ parallel_indexing_bulk_size | default(250) }}
 },
 {
-  "name": "refresh-after-index",
+  "name": "refresºh-after-index",
   "operation-type": "refresh",
   "request-timeout": 1000,
   "include-in-reporting": false
@@ -39,6 +39,13 @@
   "operation-type": "force-merge",
   "request-timeout": 7200,
   "include-in-reporting": false
+},
+{
+  "name": "force-merge-max-segments",
+  "operation-type": "force-merge",
+  "max-num-segments": {{ force_merge_max_num_segments | default(4) | int }},
+  "request-timeout": 7200,
+  "include-in-reporting": true
 },
 {
   "name": "refresh-after-force-merge",
