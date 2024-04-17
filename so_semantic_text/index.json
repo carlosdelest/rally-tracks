@@ -1,0 +1,51 @@
+{
+  "settings": {
+    {# non-serverless-index-settings-marker-start #}{%- if build_flavor != "serverless" or serverless_operator == true -%}
+    "index.number_of_shards": {{number_of_shards | default(5)}},
+    "index.number_of_replicas": {{number_of_replicas | default(0)}},
+    "index.requests.cache.enable": false
+    {%- endif -%}{# non-serverless-index-settings-marker-end #}
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "user": {
+        "type": "keyword"
+      },
+      "creationDate": {
+        "type": "date"
+      },
+      "title": {
+        "type": "text",
+        "copy_to": ["title_semantic"]
+      },
+      "title_semantic": {
+        "type": "semantic_text",
+        "inference_id": "my-inference-id-model"
+      },
+      "questionId": {
+        "type": "keyword"
+      },
+      "answerId": {
+        "type": "keyword"
+      },
+      "acceptedAnswerId": {
+        "type": "keyword"
+      },
+      "tags": {
+        "type": "keyword"
+      },
+      "body": {
+        "type": "text",
+        "copy_to": ["body_semantic"]
+      },
+      "body_semantic": {
+        "type": "semantic_text",
+        "inference_id": "my-inference-id-model"
+      },
+      "type": {
+        "type": "keyword"
+      }
+    }
+  }
+}
