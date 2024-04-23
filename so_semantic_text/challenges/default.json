@@ -3,6 +3,9 @@
   "description": "Indexes the whole document corpus using Elasticsearch default settings. We only adjust the number of replicas as we benchmark a single node cluster and Rally will only start the benchmark if the cluster turns green. Document ids are unique so all index operations are append only.",
   "schedule": [
     {
+      "operation": "delete-elser-pipeline"
+    },
+    {
       "operation": "delete-inference-service"
     },
     {
@@ -11,11 +14,16 @@
     {
       "operation": "delete-index"
     },
+    {% if p_use_pipelines %}
+    {
+      "operation": "setup-elser-pipeline"
+    },
+    {% endif %}
     {
       "operation": {
         "operation-type": "create-index",
         "settings": {{index_settings | default({}) | tojson}}
-    }
+      }
     },
     {
       "name": "check-cluster-health",

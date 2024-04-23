@@ -3,6 +3,9 @@
       "operation-type": "bulk",
       "indices": "so-semantic-text",
       "bulk-size": {{bulk_size | default(10)}},
+      {% if p_use_pipelines %}
+      "pipeline": "elser-v2-ingest",
+      {% endif %}
       "ingest-percentage": {{ingest_percentage | default(100)}}
     },
     {
@@ -25,6 +28,52 @@
       "name": "delete-inference-service",
       "operation-type": "raw-request",
       "path": "/_inference/sparse_embedding/my-inference-id-model",
+      "method": "DELETE",
+      "include-in-reporting": false,
+      "ignore": 404
+    },
+    {
+      "name": "setup-elser-pipeline",
+      "operation-type": "put-pipeline",
+      "id": "elser-v2-ingest",
+      "body": {
+        "description": "Pipes documents to ELSER",
+        "processors": [
+          {
+            "inference": {
+              "model_id": "my-inference-id-model",
+              "input_output": [
+                {
+                  "input_field": "title",
+                  "output_field": "ml.title_embedding.tokens"
+                },
+                {
+                  "input_field": "body",
+                  "output_field": "ml.body_embedding.tokens"
+                }
+              ],
+              "ignore_missing": true
+            }
+          }
+        ],
+        "on_failure": [
+          {
+            "set": {
+              "field": "_index",
+              {% raw %}
+              "description": "Record error information",
+              "field": "ml.error_information",
+              "value": "Processor {{ _ingest.on_failure_processor_type }} with tag {{ _ingest.on_failure_processor_tag }} in pipeline {{ _ingest.on_failure_pipeline }} failed with message {{ _ingest.on_failure_message }}"
+              {% endraw %}
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "delete-elser-pipeline",
+      "operation-type": "raw-request",
+      "path": "/_ingest/pipeline/elser-v2-ingest",
       "method": "DELETE",
       "include-in-reporting": false,
       "ignore": 404

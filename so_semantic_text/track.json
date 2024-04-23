@@ -1,5 +1,7 @@
 {% import "rally.helpers" as rally with context %}
 
+{% set p_use_pipelines = (use_pipelines | default(false) ) %}
+
 {
   "version": 2,
   "description": "Indexing benchmark using up to questions and answers from StackOverflow",
