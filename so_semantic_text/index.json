@@ -39,7 +39,7 @@
         {% if not p_use_pipelines %}
         "copy_to": ["body_semantic"],
         {% endif %}
-      "type": "text"
+        "type": "text"
       },
       "type": {
         "type": "keyword"
