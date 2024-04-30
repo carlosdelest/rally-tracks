@@ -1,4 +1,5 @@
 {% set p_use_pipelines = (use_pipelines | default(false) ) %}
+{% set p_calculate_body_vector = (calculate_body_vector | default(false) ) %}
 
 {
   "settings": {
@@ -36,7 +37,7 @@
         "type": "keyword"
       },
       "body": {
-        {% if not p_use_pipelines %}
+        {% if not p_use_pipelines and p_calculate_body_vector %}
         "copy_to": ["body_semantic"],
         {% endif %}
         "type": "text"
