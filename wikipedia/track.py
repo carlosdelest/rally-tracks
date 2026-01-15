@@ -306,12 +306,14 @@ class EsqlProfileRunner(runner.Runner):
     - meta.parsing.took_ms: Time it took to parse the ESQL query
     - meta.preanalysis.took_ms: Preanalysis, including field_caps, enrich policies, lookup indices
     - meta.analysis.took_ms: Analysis time before optimizations
-    - meta.<plan>.cpu_ms: Total plan CPU time
-    - meta.<plan>.took_ms: Total plan took time
-    - meta.<plan>.logical_optimization.took_ms: Plan logical optimization took time
-    - meta.<plan>.physical_optimization.took_ms: Plan physical optimization took time
-    - meta.<plan>.reduction.took_ms: : Node reduction plan generation took time
-    - meta.<plan>.<operator>.process_ms: Processing time for each operator in the plan
+    - meta.<driver>.cpu_ms: Total plan CPU time
+    - meta.<driver>.took_ms: Total driver took time
+    - meta.<driver>.number: Total number of drivers used
+    - meta.<driver>.logical_optimization.took_ms: Plan logical optimization took time
+    - meta.<driver>.physical_optimization.took_ms: Plan physical optimization took time
+    - meta.<driver>.reduction.took_ms: : Node reduction plan generation took time
+    - meta.<driver>.<operator>.process_ms: Processing time for each operator in the plan
+    - meta.<driver>.<operator>.processed_slices: Processed slices (if available)
     """
 
     async def __call__(self, es, params):
@@ -433,11 +435,9 @@ class SearchProfileRunner(runner.Runner):
 
     * ``weight``: Always 1 for profiled queries.
     * ``unit``: Always "ops".
-    * ``profile``: The complete profile output from Elasticsearch.
-    * ``profile_shards``: Number of shards that returned profile data.
-    * ``query_time_nanos``: Sum of all shard-level query times in nanoseconds.
-    * ``rewrite_time_nanos``: Sum of all shard-level rewrite times in nanoseconds.
-    * ``fetch_time_nanos``: Sum of all shard-level fetch phase times in nanoseconds.
+    * ``query_time_ms``: Sum of all shard-level query times in milliseconds.
+    * ``rewrite_time_ms``: Sum of all shard-level rewrite times in milliseconds.
+    * ``fetch_time_ms``: Sum of all shard-level fetch phase times in milliseconds.
     """
 
     def __init__(self, config=None):
@@ -496,19 +496,6 @@ class SearchProfileRunner(runner.Runner):
             "rewrite_time_ms": rewrite_time_nanos / 1_000_000,
             "fetch_time_ms": fetch_time_nanos / 1_000_000,
         }
-
-        # Add standard search response metadata if available
-        hits = response.get("hits", {})
-        total = hits.get("total", {})
-        if isinstance(total, dict):
-            result["hits"] = total.get("value", 0)
-            result["hits_relation"] = total.get("relation", "eq")
-        else:
-            result["hits"] = total
-            result["hits_relation"] = "eq"
-
-        result["took"] = response.get("took", 0)
-        result["timed_out"] = response.get("timed_out", False)
 
         return result
 
