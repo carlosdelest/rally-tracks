@@ -1,4 +1,5 @@
 {% set is_esql_profiling_enabled = (esql_profiling_enabled | default(true)) %}
+{% set is_dsl_profiling_enabled = (dsl_profiling_enabled | default(false)) %}
 {
   "name": "delete-index",
   "operation": "delete-index",
@@ -138,7 +139,10 @@
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-profile"]
-},
+}
+{% endif %}
+{% if is_dsl_profiling_enabled %}
+,
 {
   "name": "standalone-query-profile-match-search",
   "operation": "query-profile-match-search",
