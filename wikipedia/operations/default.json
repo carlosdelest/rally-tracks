@@ -149,6 +149,14 @@
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
 {
+  "name": "query-profile-qstr-search",
+  "operation-type": "search-profile",
+  "param-source": "query-search",
+  "query-type": "query-string",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
   "name": "query-esql-qstr-search",
   "operation-type": "esql",
   "param-source": "esql-search",
@@ -208,6 +216,14 @@
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
 {
+  "name": "query-profile-match-phrase-search",
+  "operation-type": "search-profile",
+  "param-source": "query-search",
+  "query-type": "match_phrase",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
   "name": "query-esql-match-phrase-search",
   "operation-type": "esql",
   "param-source": "esql-search",
@@ -229,6 +245,14 @@
 {
   "name": "query-kql-search",
   "operation-type": "search",
+  "param-source": "query-search",
+  "query-type": "kql",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-profile-kql-search",
+  "operation-type": "search-profile",
   "param-source": "query-search",
   "query-type": "kql",
   "size" : {{ query_string_search_page_size | default(20) | int }},

@@ -226,7 +226,7 @@ class EsqlSearchParamSource(QueryIteratorParamSource):
         self._search_fields = self._params["search-fields"]
         self._size = params.get("size", 20)
         self._query_type = self._params["query-type"]
-        self._pragma = self._params["pragma"]
+        self._pragma = self._params.get("pragma", {})
 
     def params(self):
 
@@ -328,8 +328,9 @@ class EsqlProfileRunner(runner.Runner):
         body = params.get("body", {})
         body["query"] = query
         body["profile"] = True
-        if params["pragma"]:
-          body["pragma"] = params["pragma"]
+        pragma = params.get("pragma", {})
+        if pragma:
+          body["pragma"] = pragma
           body["accept_pragma_risks"] = True
 
         # Add optional filter if provided
@@ -348,7 +349,6 @@ class EsqlProfileRunner(runner.Runner):
         # Build took_ms entries for each profiled phase
         result = {}
         if profile:
-            result["profile"] = profile
             for phase_name in ["query", "planning", "parsing", "preanalysis", "dependency_resolution", "analysis"]:
                 if phase_name in profile:
                     took_nanos = profile.get(phase_name, []).get("took_nanos", 0)
@@ -492,7 +492,6 @@ class SearchProfileRunner(runner.Runner):
             "weight": 1,
             "unit": "ops",
             "success": True,
-            #"profile": profile,
             "profile_shards": len(shards),
             "query_time_nanos": query_time_nanos,
             "rewrite_time_nanos": rewrite_time_nanos,
