@@ -1,5 +1,4 @@
 import csv
-import logging
 import math
 import random
 import re
@@ -9,8 +8,6 @@ from typing import Iterator, List
 
 from esrally.driver import runner
 from esrally.track.params import ParamSource
-
-logger = logging.getLogger(__name__)
 
 QUERIES_DIRNAME: str = dirname(__file__)
 QUERIES_FILENAME: str = f"{QUERIES_DIRNAME}/queries.csv"
@@ -234,7 +231,6 @@ class EsqlSearchParamSource(QueryIteratorParamSource):
 
         # Add pragma if provided
         if self._pragma:
-            logger.info("pragma: %s", self._pragma)
             body["pragma"] = self._pragma
             body["accept_pragma_risks"] = True
 
