@@ -194,7 +194,10 @@
   "param-source": "esql-search",
   "query-type": "match",
   "size" : {{ query_string_search_page_size | default(20) | int }},
-  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+  "search-fields" : "{{ query_string_search_fields | default("*") }}",
+  "pragma": {
+    "data_partitioning": "SEGMENT"
+  }
 },
 {
   "name": "query-match-phrase-search",
@@ -218,7 +221,10 @@
   "param-source": "esql-search",
   "query-type": "match_phrase",
   "size" : {{ query_string_search_page_size | default(20) | int }},
-  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+  "search-fields" : "{{ query_string_search_fields | default("*") }}",
+  "pragma": {
+    "data_partitioning": "SEGMENT"
+  }
 },
 {
   "name": "query-kql-search",
@@ -242,7 +248,10 @@
   "param-source": "esql-search",
   "query-type": "kql",
   "size" : {{ query_string_search_page_size | default(20) | int }},
-  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+  "search-fields" : "{{ query_string_search_fields | default("*") }}",
+  "pragma": {
+    "data_partitioning": "SEGMENT"
+  }
 },
 {
   "name": "retriever-search",
