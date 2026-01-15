@@ -321,6 +321,12 @@ class EsqlProfileRunner(runner.Runner):
         if query_filter:
             body["filter"] = query_filter
 
+        # Add pragma if provided
+        pragma = params.get("pragma")
+        if pragma:
+            body["pragma"] = pragma
+            body["accept_pragma_risks"] = params.get("accept_pragma_risks", True)
+
         # Set headers if not provided (preserves prior behavior)
         if not bool(headers):
             headers = None
@@ -383,6 +389,119 @@ class EsqlProfileRunner(runner.Runner):
     def __repr__(self, *args, **kwargs):
         return "esql-profile"
 
+class SearchProfileRunner(runner.Runner):
+    """
+    Runs a profiled search request against Elasticsearch.
+
+    This runner adds "profile": true to the search request body and extracts
+    profiling information from the response. It supports the same parameters
+    as the regular search operation.
+
+    It expects at least the following keys in the `params` hash:
+
+    * `index`: The index or indices against which to issue the query.
+    * `body`: Query body (profile: true will be added automatically)
+
+    The following parameters are optional:
+
+    * `cache`: True iff the request cache should be used.
+    * ``request-timeout``: a non-negative float indicating the client-side timeout.
+
+    Returned meta data includes all profile information from the response:
+
+    * ``weight``: Always 1 for profiled queries.
+    * ``unit``: Always "ops".
+    * ``profile``: The complete profile output from Elasticsearch.
+    * ``profile_shards``: Number of shards that returned profile data.
+    * ``query_time_nanos``: Sum of all shard-level query times in nanoseconds.
+    * ``rewrite_time_nanos``: Sum of all shard-level rewrite times in nanoseconds.
+    * ``fetch_time_nanos``: Sum of all shard-level fetch phase times in nanoseconds.
+    """
+
+    def __init__(self, config=None):
+        super().__init__(config=config)
+
+    async def __call__(self, es, params):
+        params, request_params, transport_params, headers = self._transport_request_params(params)
+        es = es.options(**transport_params)
+
+        index = runner.mandatory(params, "index", self)
+        body = runner.mandatory(params, "body", self)
+
+        # Add profile: true to the body
+        body["profile"] = True
+
+        cache = params.get("cache")
+        if cache is not None:
+            request_params["request_cache"] = str(cache).lower()
+        elif self.serverless_mode and not self.serverless_operator:
+            request_params["request_cache"] = "false"
+
+        encoding_header = self._query_headers(params)
+        if encoding_header is not None:
+            headers.update(encoding_header)
+
+        if not bool(headers):
+            headers = None
+
+        response = await es.search(index=index, body=body, params=request_params, headers=headers)
+
+        # Extract profile information
+        profile = response.get("profile", {})
+        shards = profile.get("shards", [])
+
+        # Calculate total profile times across all shards
+        query_time_nanos = 0
+        rewrite_time_nanos = 0
+        fetch_time_nanos = 0
+
+        for shard in shards:
+            # Sum query times from all searches
+            for search in shard.get("searches", []):
+                for query in search.get("query", []):
+                    query_time_nanos += query.get("time_in_nanos", 0)
+                rewrite_time_nanos += search.get("rewrite_time", 0)
+
+            # Sum fetch phase time
+            fetch = shard.get("fetch", {})
+            fetch_time_nanos += fetch.get("time_in_nanos", 0)
+
+        result = {
+            "weight": 1,
+            "unit": "ops",
+            "success": True,
+            "profile": profile,
+            "profile_shards": len(shards),
+            "query_time_nanos": query_time_nanos,
+            "rewrite_time_nanos": rewrite_time_nanos,
+            "fetch_time_nanos": fetch_time_nanos,
+        }
+
+        # Add standard search response metadata if available
+        hits = response.get("hits", {})
+        total = hits.get("total", {})
+        if isinstance(total, dict):
+            result["hits"] = total.get("value", 0)
+            result["hits_relation"] = total.get("relation", "eq")
+        else:
+            result["hits"] = total
+            result["hits_relation"] = "eq"
+
+        result["took"] = response.get("took", 0)
+        result["timed_out"] = response.get("timed_out", False)
+
+        return result
+
+    def _query_headers(self, params):
+        # reduces overhead due to decompression of very large responses
+        if params.get("response-compression-enabled", True):
+            return None
+        else:
+            return {"Accept-Encoding": "identity"}
+
+    def __repr__(self, *args, **kwargs):
+        return "search-profile"
+
 
 def register(registry):
     registry.register_param_source("query-search", QueryParamSource)
@@ -394,3 +513,4 @@ def register(registry):
     registry.register_param_source("retriever-search", RetrieverParamSource)
     registry.register_param_source("esql-search", EsqlSearchParamSource)
     registry.register_runner("esql-profile", EsqlProfileRunner(), async_runner=True)
+    registry.register_runner("search-profile", SearchProfileRunner(), async_runner=True)

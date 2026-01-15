@@ -173,6 +173,14 @@
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
 {
+  "name": "query-profile-match-search",
+  "operation-type": "search-profile",
+  "param-source": "query-search",
+  "query-type": "match",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
   "name": "query-esql-match-search",
   "operation-type": "esql",
   "param-source": "esql-search",

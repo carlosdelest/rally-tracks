@@ -138,5 +138,13 @@
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-profile"]
+},
+{
+  "name": "standalone-query-profile-match-search",
+  "operation": "query-profile-match-search",
+  "clients": 1,
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ profile_iterations | default(100) }},
+  "tags": ["query-profile-dsl"]
 }
 {% endif %}
