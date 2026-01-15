@@ -492,10 +492,9 @@ class SearchProfileRunner(runner.Runner):
             "weight": 1,
             "unit": "ops",
             "success": True,
-            "profile_shards": len(shards),
-            "query_time_nanos": query_time_nanos,
-            "rewrite_time_nanos": rewrite_time_nanos,
-            "fetch_time_nanos": fetch_time_nanos,
+            "query_time_ms": query_time_nanos / 1_000_000,
+            "rewrite_time_ms": rewrite_time_nanos / 1_000_000,
+            "fetch_time_ms": fetch_time_nanos / 1_000_000,
         }
 
         # Add standard search response metadata if available
