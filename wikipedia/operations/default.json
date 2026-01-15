@@ -173,6 +173,17 @@
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
 {
+  "name": "query-esql-partitioning-qstr-search",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "query-string",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}",
+  "pragma": {
+    "data_partitioning": "SEGMENT"
+  }
+},
+{
   "name": "query-match-search",
   "operation-type": "search",
   "param-source": "query-search",
@@ -198,6 +209,14 @@
 },
 {
   "name": "query-esql-profile-match-search",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "match",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-partitioning-match-search",
   "operation-type": "esql-profile",
   "param-source": "esql-search",
   "query-type": "match",
@@ -237,6 +256,14 @@
   "param-source": "esql-search",
   "query-type": "match_phrase",
   "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-partitioning-match-phrase-search",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "match_phrase",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}",
   "pragma": {
     "data_partitioning": "SEGMENT"
@@ -268,6 +295,14 @@
 },
 {
   "name": "query-esql-profile-kql-search",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "kql",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-partitioning-kql-search",
   "operation-type": "esql-profile",
   "param-source": "esql-search",
   "query-type": "kql",
