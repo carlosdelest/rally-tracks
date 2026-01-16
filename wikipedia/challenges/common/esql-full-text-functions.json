@@ -112,7 +112,7 @@
 {
   "name": "standalone-esql-profile-match-search",
   "operation": "query-esql-profile-match-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-profile"]
@@ -120,7 +120,7 @@
 {
   "name": "standalone-esql-profile-match-phrase-search",
   "operation": "query-esql-profile-match-phrase-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-profile"]
@@ -128,7 +128,7 @@
 {
   "name": "standalone-esql-profile-qstr-search",
   "operation": "query-esql-profile-qstr-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-profile"]
@@ -136,7 +136,7 @@
 {
   "name": "standalone-esql-profile-kql-search",
   "operation": "query-esql-profile-kql-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-profile"]
@@ -147,7 +147,7 @@
 {
   "name": "standalone-esql-partitioning-match-search",
   "operation": "query-esql-partitioning-match-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-data-partition"]
@@ -155,7 +155,7 @@
 {
   "name": "standalone-esql-partitioning-match-phrase-search",
   "operation": "query-esql-partitioning-match-phrase-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-data-partition"]
@@ -163,7 +163,7 @@
 {
   "name": "standalone-esql-partitioning-qstr-search",
   "operation": "query-esql-partitioning-qstr-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-data-partition"]
@@ -171,7 +171,7 @@
 {
   "name": "standalone-esql-partitioning-kql-search",
   "operation": "query-esql-partitioning-kql-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-data-partition"]
@@ -182,7 +182,7 @@
 {
   "name": "standalone-query-profile-match-search",
   "operation": "query-profile-match-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["query-profile-dsl"]
@@ -190,7 +190,7 @@
 {
   "name": "standalone-query-profile-match-phrase-search",
   "operation": "query-profile-match-phrase-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["query-profile-dsl"]
@@ -198,7 +198,7 @@
 {
   "name": "standalone-query-profile-kql-search",
   "operation": "query-profile-kql-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["query-profile-dsl"]
@@ -206,7 +206,7 @@
 {
   "name": "standalone-query-profile-qstr-search",
   "operation": "query-profile-qstr-search",
-  "clients": 1,
+  "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["query-profile-dsl"]
