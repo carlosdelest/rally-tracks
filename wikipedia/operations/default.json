@@ -180,7 +180,7 @@
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}",
   "pragma": {
-    "data_partitioning": "SEGMENT"
+    "data_partitioning": "{{esql_data_partitioning | default("SEGMENT") }}"
   }
 },
 {
@@ -223,7 +223,7 @@
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}",
   "pragma": {
-    "data_partitioning": "SEGMENT"
+    "data_partitioning": "{{esql_data_partitioning | default("SEGMENT") }}"
   }
 },
 {
@@ -266,7 +266,7 @@
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}",
   "pragma": {
-    "data_partitioning": "SEGMENT"
+    "data_partitioning": "{{esql_data_partitioning | default("SEGMENT") }}"
   }
 },
 {
@@ -309,7 +309,7 @@
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}",
   "pragma": {
-    "data_partitioning": "SEGMENT"
+    "data_partitioning": "{{esql_data_partitioning | default("SEGMENT") }}"
   }
 },
 {
