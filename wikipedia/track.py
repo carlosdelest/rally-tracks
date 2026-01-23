@@ -262,6 +262,7 @@ class QueryParamSource(QueryIteratorParamSource):
         self._index_name = params.get("index", track.indices[0].name if len(track.indices) == 1 else "_all")
         self._cache = params.get("cache", False)
         self._query_type = self._params["query-type"]
+        self._detailed_results = params.get("detailed-results", False)
 
     def params(self):
         try:
@@ -290,6 +291,7 @@ class QueryParamSource(QueryIteratorParamSource):
             },
             "index": self._index_name,
             "cache": self._cache,
+            "detailed-results": self._detailed_results
         }
 
 

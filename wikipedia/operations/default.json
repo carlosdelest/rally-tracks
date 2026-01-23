@@ -150,7 +150,8 @@
 },
 {
   "name": "query-profile-qstr-search",
-  "operation-type": "search-profile",
+  "operation-type": "search",
+  "detailed-results": true,
   "param-source": "query-search",
   "query-type": "query-string",
   "size" : {{ query_string_search_page_size | default(20) | int }},
@@ -193,7 +194,8 @@
 },
 {
   "name": "query-profile-match-search",
-  "operation-type": "search-profile",
+  "operation-type": "search",
+  "detailed-results": true,
   "param-source": "query-search",
   "query-type": "match",
   "size" : {{ query_string_search_page_size | default(20) | int }},
@@ -236,7 +238,8 @@
 },
 {
   "name": "query-profile-match-phrase-search",
-  "operation-type": "search-profile",
+  "operation-type": "search",
+  "detailed-results": true,
   "param-source": "query-search",
   "query-type": "match_phrase",
   "size" : {{ query_string_search_page_size | default(20) | int }},
@@ -279,7 +282,8 @@
 },
 {
   "name": "query-profile-kql-search",
-  "operation-type": "search-profile",
+  "operation-type": "search",
+  "detailed-results": true,
   "param-source": "query-search",
   "query-type": "kql",
   "size" : {{ query_string_search_page_size | default(20) | int }},
