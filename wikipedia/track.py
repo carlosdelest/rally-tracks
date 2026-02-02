@@ -1,4 +1,5 @@
 import csv
+import ijson
 import math
 import random
 import re
@@ -342,18 +343,33 @@ class EsqlProfileRunner(runner.Runner):
         if not bool(headers):
             headers = None
 
-        # Execute the ESQL query with profiling
-        response = await es.perform_request(method="POST", path="/_query", headers=headers, body=body, params=request_params)
-        profile = response["profile"]
+        # disable eager response parsing - responses might be huge thus skewing results
+        es.return_raw_response()
 
-        # Build took_ms entries for each profiled phase
         result = {}
-        if profile:
+        try:
+            # Execute the ESQL query with profiling using raw request
+            response = await es.perform_request(method="POST", path="/_query", headers=headers, body=body, params=request_params)
+
+            # Parse only the profile section from the raw response using ijson
+            profile = None
+            response.seek(0)
+            for item in ijson.items(response, 'profile'):
+                profile = item
+                break
+
+            if not profile:
+                result["error"] = "No profile data in response"
+                return result
+
+            # Build took_ms entries for each profiled phase
             for phase_name in ["query", "planning", "parsing", "preanalysis", "dependency_resolution", "analysis"]:
                 if phase_name in profile:
-                    took_nanos = profile.get(phase_name, []).get("took_nanos", 0)
-                    if took_nanos > 0:
-                        result[f"{phase_name}.took_ms"] = took_nanos / 1_000_000  # Convert to milliseconds
+                    phase_data = profile.get(phase_name, {})
+                    if isinstance(phase_data, dict):
+                        took_nanos = phase_data.get("took_nanos", 0)
+                        if took_nanos > 0:
+                            result[f"{phase_name}.took_ms"] = took_nanos / 1_000_000  # Convert to milliseconds
 
             # Extract driver-level metrics
             drivers = profile.get("drivers", [])
@@ -391,7 +407,6 @@ class EsqlProfileRunner(runner.Runner):
                         metric_key = f"{driver_name}.{safe_operator_name}.processed_slices"
                         result[metric_key] = result.get(metric_key, 0) + processed_slices
 
-
             # Extract plan-level metrics
             plans = profile.get("plans", [])
             for plan in plans:
@@ -405,6 +420,9 @@ class EsqlProfileRunner(runner.Runner):
                         metric_name = optimization.replace("_nanos", "")
                         metric_key = f"{plan_name}.{metric_name}.took_ms"
                         result[metric_key] = result.get(metric_key, 0) + optimization_nanos / 1_000_000  # Convert to milliseconds
+
+        except Exception as e:
+            result["error"] = f"{type(e).__name__}: {str(e)}"
 
         return result
 
