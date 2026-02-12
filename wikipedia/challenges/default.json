@@ -197,4 +197,12 @@
     "schedule": [
       {{ rally.collect(parts="common/ingest-search-autoscale-schedule.json") }}
     ]
+  },
+  {
+    "name": "compare-esql-dsl-results",
+    "description": "Compares ES|QL and Query DSL results for all query types to validate equivalence",
+    "default": false,
+    "schedule": [
+      {{ rally.collect(parts="common/compare-esql-dsl-results.json") }}
+    ]
   }

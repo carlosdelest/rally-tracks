@@ -255,4 +255,36 @@
   "search-fields" : "{{ retriever_search_fields | default("*") }}",
   "rerank": "True",
   "reranker": "random_reranker"
+},
+{
+  "name": "compare-esql-dsl-query-string",
+  "operation-type": "compare-esql-dsl",
+  "param-source": "compare-esql-dsl-param-source",
+  "query-type": "query-string",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "compare-esql-dsl-match",
+  "operation-type": "compare-esql-dsl",
+  "param-source": "compare-esql-dsl-param-source",
+  "query-type": "match",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "compare-esql-dsl-match-phrase",
+  "operation-type": "compare-esql-dsl",
+  "param-source": "compare-esql-dsl-param-source",
+  "query-type": "match_phrase",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "compare-esql-dsl-kql",
+  "operation-type": "compare-esql-dsl",
+  "param-source": "compare-esql-dsl-param-source",
+  "query-type": "kql",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
 }

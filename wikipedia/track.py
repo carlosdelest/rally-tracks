@@ -286,6 +286,147 @@ class QueryParamSource(QueryIteratorParamSource):
         }
 
 
+class CompareEsqlDslParamSource(QueryIteratorParamSource):
+    """
+    Parameter source for comparing ES|QL and DSL query results.
+    Generates parameters for the CompareEsqlDslRunner.
+    """
+
+    def __init__(self, track, params, **kwargs):
+        super().__init__(track, params, **kwargs)
+        self._index_name = params.get("index", track.indices[0].name if len(track.indices) == 1 else "_all")
+        self._search_fields = self._params["search-fields"]
+        self._size = params.get("size", 20)
+        self._query_type = self._params["query-type"]
+
+    def params(self):
+        try:
+            query = next(self._queries_iterator)
+            return {
+                "query": query,
+                "query-type": self._query_type,
+                "search-fields": self._search_fields,
+                "index": self._index_name,
+                "size": self._size,
+            }
+        except StopIteration:
+            self._queries_iterator = iter(self._sample_queries)
+            return self.params()
+
+
+class CompareEsqlDslRunner(runner.Runner):
+    """
+    Runner that executes both an ES|QL query and a DSL query with the same search text,
+    then compares that the returned document IDs are the same and in the same order.
+
+    Returns metrics:
+    - ids_match: Boolean indicating if IDs match in order
+    - esql_count: Number of results from ES|QL query
+    - dsl_count: Number of results from DSL query
+    - esql_ids: List of IDs from ES|QL (only included if mismatch)
+    - dsl_ids: List of IDs from DSL (only included if mismatch)
+    """
+
+    async def __call__(self, es, params):
+        # Extract transport-level parameters (timeouts, headers, etc.)
+        params_dict, request_params, transport_params, headers = self._transport_request_params(params)
+        es = es.options(**transport_params)
+
+        # Get mandatory parameters
+        query_text = runner.mandatory(params, "query", self)
+        query_type = runner.mandatory(params, "query-type", self)
+        search_fields = runner.mandatory(params, "search-fields", self)
+        index_name = params.get("index", "_all")
+        size = params.get("size", 20)
+
+        # Escape double quotes in query text for ES|QL
+        escaped_query = query_text.replace('"', '\\"')
+
+        # Build ES|QL query using same logic as EsqlSearchParamSource
+        if query_type == "query-string":
+            esql_query_body = f'QSTR("{ escaped_query }", {{"default_field": "{ search_fields }" }})'
+        elif query_type == "match":
+            esql_query_body = f'MATCH(title, "{ escaped_query }") OR MATCH(content, "{ escaped_query }")'
+        elif query_type == "kql":
+            esql_query_body = f'KQL("{ search_fields }:{ escaped_query }")'
+        elif query_type == "match_phrase":
+            esql_query_body = f'MATCH_PHRASE(title, "{ escaped_query }") OR MATCH_PHRASE(content, "{ escaped_query }")'
+        else:
+            raise ValueError("Unknown query type: " + query_type)
+
+        esql_query = f"FROM {index_name} METADATA _id, _score | WHERE { esql_query_body } | KEEP _id, _score | SORT _score DESC | LIMIT { size }"
+
+        # Build DSL query using same logic as QueryParamSource
+        if query_type == "query-string":
+            dsl_query_body = {"query_string": {"query": query_text, "default_field": search_fields}}
+        elif query_type == "kql":
+            dsl_query_body = {"kql": {"query": query_text, "default_field": search_fields}}
+        elif query_type == "match":
+            dsl_query_body = {"bool": {"should": [{"match": {"title": query_text}}, {"match": {"content": query_text}}]}}
+        elif query_type == "match_phrase":
+            dsl_query_body = {"bool": {"should": [{"match_phrase": {"title": query_text}}, {"match_phrase": {"content": query_text}}]}}
+        else:
+            raise ValueError("Unknown query type: " + query_type)
+
+        # Set headers if not provided
+        if not bool(headers):
+            headers = None
+
+        # Execute ES|QL query
+        esql_response = await es.perform_request(
+            method="POST",
+            path="/_query",
+            headers=headers,
+            body={"query": esql_query},
+            params=request_params,
+        )
+
+        # Execute DSL query
+        dsl_response = await es.search(
+            index=index_name, body={"query": dsl_query_body, "size": size}
+        )
+
+        # Extract IDs from ES|QL response (columnar format)
+        esql_ids = []
+        if "values" in esql_response:
+            columns = esql_response.get("columns", [])
+            id_column_index = None
+            for i, col in enumerate(columns):
+                if col.get("name") == "_id":
+                    id_column_index = i
+                    break
+
+            if id_column_index is not None:
+                for row in esql_response.get("values", []):
+                    esql_ids.append(row[id_column_index])
+
+        # Extract IDs from DSL response
+        dsl_ids = [hit["_id"] for hit in dsl_response.get("hits", {}).get("hits", [])]
+
+        # Normalize IDs to strings for comparison (handles type mismatches)
+        esql_ids_normalized = [str(id_val) for id_val in esql_ids]
+        dsl_ids_normalized = [str(id_val) for id_val in dsl_ids]
+
+        # Compare IDs
+        ids_match = esql_ids_normalized == dsl_ids_normalized
+
+        result = {"ids_match": ids_match, "esql_count": len(esql_ids_normalized), "dsl_count": len(dsl_ids_normalized)}
+
+        # Include the actual IDs if there's a mismatch for debugging
+        if not ids_match:
+            result["esql_ids"] = esql_ids_normalized
+            result["dsl_ids"] = dsl_ids_normalized
+            result["esql_ids_raw"] = esql_ids
+            result["dsl_ids_raw"] = dsl_ids
+            result["query_text"] = query_text
+            result["query_type"] = query_type
+
+        return result
+
+    def __repr__(self):
+        return "compare-esql-dsl"
+
+
 class EsqlProfileRunner(runner.Runner):
     """
     Runs an ES|QL query using profile: true, and adds the profile information to the result:
@@ -395,4 +536,6 @@ def register(registry):
     registry.register_param_source("pinned-search-param-source", PinnedSearchParamSource)
     registry.register_param_source("retriever-search", RetrieverParamSource)
     registry.register_param_source("esql-search", EsqlSearchParamSource)
+    registry.register_param_source("compare-esql-dsl-param-source", CompareEsqlDslParamSource)
     registry.register_runner("esql-profile", EsqlProfileRunner(), async_runner=True)
+    registry.register_runner("compare-esql-dsl", CompareEsqlDslRunner(), async_runner=True)
