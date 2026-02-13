@@ -354,7 +354,9 @@ class CompareEsqlDslRunner(runner.Runner):
         else:
             raise ValueError("Unknown query type: " + query_type)
 
-        esql_query = f"FROM {index_name} METADATA _id, _score | WHERE { esql_query_body } | KEEP _id, _score | SORT _score DESC | LIMIT { size }"
+        esql_query = (
+            f"FROM {index_name} METADATA _id, _score | WHERE { esql_query_body } | KEEP _id, _score | SORT _score DESC | LIMIT { size }"
+        )
 
         # Build DSL query using same logic as QueryParamSource
         if query_type == "query-string":
@@ -382,44 +384,98 @@ class CompareEsqlDslRunner(runner.Runner):
         )
 
         # Execute DSL query
-        dsl_response = await es.search(
-            index=index_name, body={"query": dsl_query_body, "size": size}
-        )
+        dsl_response = await es.search(index=index_name, body={"query": dsl_query_body, "size": size})
 
-        # Extract IDs from ES|QL response (columnar format)
-        esql_ids = []
+        # Extract IDs and scores from ES|QL response (columnar format)
+        esql_results = []  # List of (id, score) tuples
         if "values" in esql_response:
             columns = esql_response.get("columns", [])
             id_column_index = None
+            score_column_index = None
             for i, col in enumerate(columns):
                 if col.get("name") == "_id":
                     id_column_index = i
-                    break
+                elif col.get("name") == "_score":
+                    score_column_index = i
 
-            if id_column_index is not None:
+            if id_column_index is not None and score_column_index is not None:
                 for row in esql_response.get("values", []):
-                    esql_ids.append(row[id_column_index])
+                    esql_results.append((str(row[id_column_index]), float(row[score_column_index])))
 
-        # Extract IDs from DSL response
-        dsl_ids = [hit["_id"] for hit in dsl_response.get("hits", {}).get("hits", [])]
+        # Extract IDs and scores from DSL response
+        dsl_results = [(str(hit["_id"]), float(hit["_score"])) for hit in dsl_response.get("hits", {}).get("hits", [])]
 
-        # Normalize IDs to strings for comparison (handles type mismatches)
-        esql_ids_normalized = [str(id_val) for id_val in esql_ids]
-        dsl_ids_normalized = [str(id_val) for id_val in dsl_ids]
+        # Group results by score, maintaining order
+        # Using 5 decimal places precision (tolerance of 1e-5 = 0.00001)
+        score_tolerance = 1e-5
 
-        # Compare IDs
-        ids_match = esql_ids_normalized == dsl_ids_normalized
+        def group_by_score(results):
+            """Returns list of (score, set_of_ids) tuples in order"""
+            groups = []
+            current_score = None
+            current_ids = set()
 
-        result = {"ids_match": ids_match, "esql_count": len(esql_ids_normalized), "dsl_count": len(dsl_ids_normalized)}
+            for id_val, score in results:
+                if current_score is None or abs(score - current_score) > score_tolerance:
+                    if current_ids:
+                        groups.append((current_score, current_ids))
+                    current_score = score
+                    current_ids = {id_val}
+                else:
+                    current_ids.add(id_val)
 
-        # Include the actual IDs if there's a mismatch for debugging
+            if current_ids:
+                groups.append((current_score, current_ids))
+
+            return groups
+
+        esql_groups = group_by_score(esql_results)
+        dsl_groups = group_by_score(dsl_results)
+
+        # Compare: same number of score groups, same scores, same IDs per score
+        ids_match = True
+        mismatch_details = []
+
+        if len(esql_groups) != len(dsl_groups):
+            ids_match = False
+            mismatch_details.append(f"Different number of score groups: {len(esql_groups)} vs {len(dsl_groups)}")
+        else:
+            is_last_group = len(esql_groups)
+            for i, ((esql_score, esql_ids), (dsl_score, dsl_ids)) in enumerate(zip(esql_groups, dsl_groups)):
+                # Compare scores (with 5 decimal places precision)
+                if abs(esql_score - dsl_score) > score_tolerance:
+                    ids_match = False
+                    mismatch_details.append(f"Score mismatch at group {i}: {esql_score:.5f} vs {dsl_score:.5f}")
+
+                # Compare IDs as sets (order doesn't matter within same score)
+                # Skip ID comparison for the last group - it's OK if they differ due to LIMIT cutoff
+                if esql_ids != dsl_ids and i < is_last_group - 1:
+                    ids_match = False
+                    missing_in_dsl = esql_ids - dsl_ids
+                    missing_in_esql = dsl_ids - esql_ids
+                    details = f"ID mismatch at score {esql_score:.5f}:"
+                    if missing_in_dsl:
+                        details += f" ESQL has {missing_in_dsl} not in DSL."
+                    if missing_in_esql:
+                        details += f" DSL has {missing_in_esql} not in ESQL."
+                    mismatch_details.append(details)
+
+        result = {
+            "ids_match": ids_match,
+            "query_text": query_text,
+            "query_type": query_type,
+        }
+
+        # Include the actual results if there's a mismatch for debugging
         if not ids_match:
-            result["esql_ids"] = esql_ids_normalized
-            result["dsl_ids"] = dsl_ids_normalized
-            result["esql_ids_raw"] = esql_ids
-            result["dsl_ids_raw"] = dsl_ids
-            result["query_text"] = query_text
-            result["query_type"] = query_type
+            result["mismatch_details"] = mismatch_details
+            # Convert to JSON-friendly format: list of dicts instead of tuples
+            result["esql_results"] = [{"_id": id_val, "_score": score} for id_val, score in esql_results[:20]]
+            result["dsl_results"] = [{"_id": id_val, "_score": score} for id_val, score in dsl_results[:20]]
+            result["esql_count"] = len(esql_results)
+            result["dsl_count"] = len(dsl_results)
+            result["esql_score_groups"] = len(esql_groups)
+            result["dsl_score_groups"] = len(dsl_groups)
 
         return result
 
