@@ -507,13 +507,15 @@ class TracedSearchRunner(runner.Runner):
         def find_spans(span):
             if span.get("name", "").startswith("slice_"):
                 slice_spans.append(span)
-            if span.get("name") == "query":
+            if span.get("name", "") == "query":
                 query_spans.append(span)
             for child in span.get("children", []):
                 find_spans(child)
 
         if "trace" in response and "spans" in response["trace"]:
             find_spans(response["trace"]["spans"])
+        else:
+            return {"weight": 1, "unit": "ops", "success": True}
 
         # Aggregate slice metrics
         total_slice_duration = sum(s.get("duration_nanos", 0) for s in slice_spans)
@@ -541,16 +543,26 @@ class TracedSearchRunner(runner.Runner):
             "weight": 1,
             "unit": "ops",
             "success": True,
-            "slice_duration_ns_total": total_slice_duration,
-            "slice_max_docs_total": total_max_docs,
-            "slice_segments_total": total_segments,
-            "slice_count": len(slice_spans),
-            "slice_duration_ns_max": max_slice_duration,
-            "slice_max_docs_max": max_max_docs,
-            "slice_segments_max": max_segments,
-            "query_duration_ns": query_duration_ns,
-            "query_rewrite_duration_ns": query_rewrite_duration_ns,
-            "create_context_duration_ns": create_context_duration_ns,
+            "shard_query_phase": {
+                "duration_ns": query_duration_ns,
+                "rewrite_ns": query_rewrite_duration_ns,
+                "create_context_ns": create_context_duration_ns,
+                "slices": {
+                    "count": len(slice_spans),
+                    "duration": {
+                        "total_ns": total_slice_duration,
+                        "max_ns": max_slice_duration,
+                    },
+                    "max_docs": {
+                        "total_count": total_max_docs,
+                        "max_count": max_max_docs,
+                    },
+                    "segments": {
+                        "total_count": total_segments,
+                        "max_count": max_segments,
+                    },
+                },
+            },
         }
 
     def __repr__(self, *args, **kwargs):
