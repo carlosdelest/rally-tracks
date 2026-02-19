@@ -140,3 +140,12 @@
   "tags": ["esql-profile"]
 }
 {% endif %}
+,
+{
+  "name": "standalone-query-trace-match-search",
+  "operation": "query-trace-match-search",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ iterations | default(1000) }},
+  "tags": ["query-dsl-trace"]
+}

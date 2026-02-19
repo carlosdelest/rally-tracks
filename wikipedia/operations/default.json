@@ -169,7 +169,16 @@
   "name": "query-match-search",
   "operation-type": "search",
   "param-source": "query-search",
-  "query-type": "multi_match",
+  "query-type": "match",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "detailed-results": true,
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-trace-match-search",
+  "operation-type": "search-trace",
+  "param-source": "query-search",
+  "query-type": "match",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "detailed-results": true,
   "search-fields" : "{{ query_string_search_fields | default("*") }}"

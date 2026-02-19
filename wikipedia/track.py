@@ -124,12 +124,22 @@ class CreateQueryRulesetParamSource(ParamSource):
             rule = {
                 "rule_id": "rule_{{i}}",
                 "type": random.choice(["pinned", "exclude"]),
-                "criteria": [{"type": "exact", "metadata": "rule_key", "values": [random.choice(["match", "no-match"])]}],
+                "criteria": [
+                    {
+                        "type": "exact",
+                        "metadata": "rule_key",
+                        "values": [random.choice(["match", "no-match"])],
+                    }
+                ],
                 "actions": {"ids": [random.choice(ids)]},
             }
             rules.append(rule)
 
-        return {"method": "PUT", "path": f"{QUERY_RULES_ENDPOINT}/{self.query_ruleset_params.ruleset_id}", "body": {"rules": rules}}
+        return {
+            "method": "PUT",
+            "path": f"{QUERY_RULES_ENDPOINT}/{self.query_ruleset_params.ruleset_id}",
+            "body": {"rules": rules},
+        }
 
 
 class QueryRulesSearchParamSource(QueryIteratorParamSource):
@@ -148,7 +158,12 @@ class QueryRulesSearchParamSource(QueryIteratorParamSource):
                         "rule": {
                             "match_criteria": {"rule_key": random.choice(["match", "no-match"])},
                             "ruleset_ids": [self.query_ruleset_params.ruleset_id],
-                            "organic": {"query_string": {"query": query, "default_field": self._params["search-fields"]}},
+                            "organic": {
+                                "query_string": {
+                                    "query": query,
+                                    "default_field": self._params["search-fields"],
+                                }
+                            },
                         }
                     },
                     "size": self._params["size"],
@@ -174,7 +189,12 @@ class PinnedSearchParamSource(QueryIteratorParamSource):
                 "body": {
                     "query": {
                         "pinned": {
-                            "organic": {"query_string": {"query": query, "default_field": self._params["search-fields"]}},
+                            "organic": {
+                                "query_string": {
+                                    "query": query,
+                                    "default_field": self._params["search-fields"],
+                                }
+                            },
                             "ids": [random.choice(self.ids)],
                         }
                     },
@@ -197,12 +217,25 @@ class RetrieverParamSource(QueryIteratorParamSource):
 
     def params(self):
         standard_retriever = {
-            "standard": {"query": {"query_string": {"query": next(self._queries_iterator), "default_field": self._search_fields}}}
+            "standard": {
+                "query": {
+                    "query_string": {
+                        "query": next(self._queries_iterator),
+                        "default_field": self._search_fields,
+                    }
+                }
+            }
         }
 
         retriever = standard_retriever
         if self._rerank:
-            retriever = {self._reranker: {"retriever": standard_retriever, "field": self._search_fields, "rank_window_size": self._size}}
+            retriever = {
+                self._reranker: {
+                    "retriever": standard_retriever,
+                    "field": self._search_fields,
+                    "rank_window_size": self._size,
+                }
+            }
 
         try:
             return {
@@ -228,18 +261,18 @@ class EsqlSearchParamSource(QueryIteratorParamSource):
         try:
             query = next(self._queries_iterator)
             if self._query_type == "query-string":
-                query_body = f'QSTR("{ query }", {{"default_field": "{ self._search_fields }" }})'
+                query_body = f'QSTR("{query}", {{"default_field": "{self._search_fields}" }})'
             elif self._query_type == "match":
-                query_body = f'MATCH(title, "{ query }") OR MATCH(content, "{ query }")'
+                query_body = f'MATCH(title, "{query}") OR MATCH(content, "{query}")'
             elif self._query_type == "kql":
-                query_body = f'KQL("{ self._search_fields }:{ query }")'
+                query_body = f'KQL("{self._search_fields}:{query}")'
             elif self._query_type == "match_phrase":
-                query_body = f'MATCH_PHRASE(title, "{ query }") OR MATCH_PHRASE(content, "{ query }")'
+                query_body = f'MATCH_PHRASE(title, "{query}") OR MATCH_PHRASE(content, "{query}")'
             else:
                 raise ValueError("Unknown query type: " + self._query_type)
 
             return {
-                "query": f"FROM {self._index_name} METADATA _id, _score, _source | WHERE { query_body } | KEEP _id, _score, _source | SORT _score DESC | LIMIT { self._size }",
+                "query": f"FROM {self._index_name} METADATA _id, _score, _source | WHERE {query_body} | KEEP _id, _score, _source | SORT _score DESC | LIMIT {self._size}",
             }
 
         except StopIteration:
@@ -259,15 +292,46 @@ class QueryParamSource(QueryIteratorParamSource):
         try:
             query = next(self._queries_iterator)
             if self._query_type == "query-string":
-                query_body = {"query_string": {"query": query, "default_field": self._params["search-fields"]}}
+                query_body = {
+                    "query_string": {
+                        "query": query,
+                        "default_field": self._params["search-fields"],
+                    }
+                }
             elif self._query_type == "kql":
-                query_body = {"kql": {"query": query, "default_field": self._params["search-fields"]}}
+                query_body = {
+                    "kql": {
+                        "query": query,
+                        "default_field": self._params["search-fields"],
+                    }
+                }
             elif self._query_type == "match":
-                query_body = {"bool": {"should": [{"match": {"title": query}}, {"match": {"content": query}}]}}
+                query_body = {
+                    "bool": {
+                        "should": [
+                            {"match": {"title": query}},
+                            {"match": {"content": query}},
+                        ]
+                    }
+                }
             elif self._query_type == "multi_match":
-                query_body = {"bool": {"should": [{"match": {"title": query}}, {"match": {"content": query}}]}}
+                query_body = {
+                    "bool": {
+                        "should": [
+                            {"match": {"title": query}},
+                            {"match": {"content": query}},
+                        ]
+                    }
+                }
             elif self._query_type == "match_phrase":
-                query_body = {"bool": {"should": [{"match_phrase": {"title": query}}, {"match_phrase": {"content": query}}]}}
+                query_body = {
+                    "bool": {
+                        "should": [
+                            {"match_phrase": {"title": query}},
+                            {"match_phrase": {"content": query}},
+                        ]
+                    }
+                }
             else:
                 raise ValueError("Unknown query type: " + self._query_type)
 
@@ -328,13 +392,26 @@ class EsqlProfileRunner(runner.Runner):
             headers = None
 
         # Execute the ESQL query with profiling
-        response = await es.perform_request(method="POST", path="/_query", headers=headers, body=body, params=request_params)
+        response = await es.perform_request(
+            method="POST",
+            path="/_query",
+            headers=headers,
+            body=body,
+            params=request_params,
+        )
         profile = response["profile"]
 
         # Build took_ms entries for each profiled phase
         result = {}
         if profile:
-            for phase_name in ["query", "planning", "parsing", "preanalysis", "dependency_resolution", "analysis"]:
+            for phase_name in [
+                "query",
+                "planning",
+                "parsing",
+                "preanalysis",
+                "dependency_resolution",
+                "analysis",
+            ]:
                 if phase_name in profile:
                     took_nanos = profile.get(phase_name, []).get("took_nanos", 0)
                     if took_nanos > 0:
@@ -377,7 +454,11 @@ class EsqlProfileRunner(runner.Runner):
                 plan_name = plan.get("description", "unknown")
 
                 # Extract optimization level metrics
-                for optimization in ["logical_optimization_nanos", "physical_optimization_nanos", "reduction_nanos"]:
+                for optimization in [
+                    "logical_optimization_nanos",
+                    "physical_optimization_nanos",
+                    "reduction_nanos",
+                ]:
                     optimization_nanos = plan.get(optimization, 0)
                     if optimization_nanos > 0:
                         # Remove "_nanos" suffix from the metric name
@@ -391,6 +472,105 @@ class EsqlProfileRunner(runner.Runner):
         return "esql-profile"
 
 
+class TracedSearchRunner(runner.Runner):
+    """
+    Executes a search query with tracing enabled and extracts metrics from the `shard_query` spans in the trace output.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.total_shard_query_duration = 0
+        self.total_max_docs = 0
+        self.total_slices = 0
+        self.total_segments = 0
+        self.max_shard_query_duration = 0
+        self.max_max_docs = 0
+        self.max_slices = 0
+        self.max_segments = 0
+
+    def _reset_totals(self):
+        self.total_shard_query_duration = 0
+        self.total_max_docs = 0
+        self.total_slices = 0
+        self.total_segments = 0
+        self.max_shard_query_duration = 0
+        self.max_max_docs = 0
+        self.max_slices = 0
+        self.max_segments = 0
+
+    def _find_and_process_shard_query_spans(self, span):
+        if span.get("name") == "shard_query":
+            duration = span.get("duration_nanos", 0)
+            details = span.get("details", {})
+            max_docs = details.get("max_docs", 0)
+            slices = details.get("slices", 0)
+            segments = details.get("segments", 0)
+
+            self.total_shard_query_duration += duration
+            self.total_max_docs += max_docs
+            self.total_slices += slices
+            self.total_segments += segments
+
+            if duration > self.max_shard_query_duration:
+                self.max_shard_query_duration = duration
+            if max_docs > self.max_max_docs:
+                self.max_max_docs = max_docs
+            if slices > self.max_slices:
+                self.max_slices = slices
+            if segments > self.max_segments:
+                self.max_segments = segments
+
+        for child in span.get("children", []):
+            self._find_and_process_shard_query_spans(child)
+
+    async def __call__(self, es, params):
+        # Reset all accumulators before a new run
+        self._reset_totals()
+
+        params, request_params, transport_params, headers = self._transport_request_params(params)
+        es = es.options(**transport_params)
+
+        index = runner.mandatory(params, "index", self)
+        body = runner.mandatory(params, "body", self)
+
+        body["trace"] = True
+
+        # Mimic the path construction from the default Query runner
+        path_components = []
+        if index:
+            path_components.append(index)
+        path_components.append("_search")
+        path = "/".join(path_components)
+
+        response = await es.perform_request(
+            method="GET",
+            path="/" + path,
+            params=request_params,
+            body=body,
+            headers=headers,
+        )
+
+        if "trace" in response and "spans" in response["trace"]:
+            self._find_and_process_shard_query_spans(response["trace"]["spans"])
+
+        return {
+            "weight": 1,
+            "unit": "ops",
+            "success": True,
+            "shard_query_duration_ns_total": self.total_shard_query_duration,
+            "shard_query_max_docs_total": self.total_max_docs,
+            "shard_query_slices_total": self.total_slices,
+            "shard_query_segments_total": self.total_segments,
+            "shard_query_duration_ns_max": self.max_shard_query_duration,
+            "shard_query_max_docs_max": self.max_max_docs,
+            "shard_query_slices_max": self.max_slices,
+            "shard_query_segments_max": self.max_segments,
+        }
+
+    def __repr__(self, *args, **kwargs):
+        return "traced-search"
+
+
 def register(registry):
     registry.register_param_source("query-search", QueryParamSource)
     registry.register_param_source("create-search-application-param-source", CreateSearchApplicationParamSource)
@@ -401,3 +581,4 @@ def register(registry):
     registry.register_param_source("retriever-search", RetrieverParamSource)
     registry.register_param_source("esql-search", EsqlSearchParamSource)
     registry.register_runner("esql-profile", EsqlProfileRunner(), async_runner=True)
+    registry.register_runner("search-trace", TracedSearchRunner(), async_runner=True)
