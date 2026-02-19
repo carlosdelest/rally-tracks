@@ -148,4 +148,28 @@
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
   "tags": ["query-dsl-trace"]
+},
+{
+  "name": "standalone-query-trace-string-search",
+  "operation": "query-trace-string-search",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ iterations | default(1000) }},
+  "tags": ["query-dsl-trace"]
+},
+{
+  "name": "standalone-query-trace-match-phrase-search",
+  "operation": "query-trace-match-phrase-search",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ iterations | default(1000) }},
+  "tags": ["query-dsl-trace"]
+},
+{
+  "name": "standalone-query-trace-kql-search",
+  "operation": "query-trace-kql-search",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ iterations | default(1000) }},
+  "tags": ["query-dsl-trace"]
 }

@@ -184,6 +184,33 @@
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
 {
+  "name": "query-trace-string-search",
+  "operation-type": "search-trace",
+  "param-source": "query-search",
+  "query-type": "query-string",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "detailed-results": true,
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-trace-match-phrase-search",
+  "operation-type": "search-trace",
+  "param-source": "query-search",
+  "query-type": "match_phrase",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "detailed-results": true,
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-trace-kql-search",
+  "operation-type": "search-trace",
+  "param-source": "query-search",
+  "query-type": "kql",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "detailed-results": true,
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
   "name": "query-esql-match-search",
   "operation-type": "esql",
   "param-source": "esql-search",
