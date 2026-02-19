@@ -474,59 +474,10 @@ class EsqlProfileRunner(runner.Runner):
 
 class TracedSearchRunner(runner.Runner):
     """
-    Executes a search query with tracing enabled and extracts metrics from the `shard_query` spans in the trace output.
+    Executes a search query with tracing enabled and extracts metrics from the `slice_` spans in the trace output.
     """
 
-    def __init__(self):
-        super().__init__()
-        self.total_shard_query_duration = 0
-        self.total_max_docs = 0
-        self.total_slices = 0
-        self.total_segments = 0
-        self.max_shard_query_duration = 0
-        self.max_max_docs = 0
-        self.max_slices = 0
-        self.max_segments = 0
-
-    def _reset_totals(self):
-        self.total_shard_query_duration = 0
-        self.total_max_docs = 0
-        self.total_slices = 0
-        self.total_segments = 0
-        self.max_shard_query_duration = 0
-        self.max_max_docs = 0
-        self.max_slices = 0
-        self.max_segments = 0
-
-    def _find_and_process_shard_query_spans(self, span):
-        if span.get("name") == "shard_query":
-            duration = span.get("duration_nanos", 0)
-            details = span.get("details", {})
-            max_docs = details.get("max_docs", 0)
-            slices = details.get("slices", 0)
-            segments = details.get("segments", 0)
-
-            self.total_shard_query_duration += duration
-            self.total_max_docs += max_docs
-            self.total_slices += slices
-            self.total_segments += segments
-
-            if duration > self.max_shard_query_duration:
-                self.max_shard_query_duration = duration
-            if max_docs > self.max_max_docs:
-                self.max_max_docs = max_docs
-            if slices > self.max_slices:
-                self.max_slices = slices
-            if segments > self.max_segments:
-                self.max_segments = segments
-
-        for child in span.get("children", []):
-            self._find_and_process_shard_query_spans(child)
-
     async def __call__(self, es, params):
-        # Reset all accumulators before a new run
-        self._reset_totals()
-
         params, request_params, transport_params, headers = self._transport_request_params(params)
         es = es.options(**transport_params)
 
@@ -550,25 +501,63 @@ class TracedSearchRunner(runner.Runner):
             headers=headers,
         )
 
-        if "trace" in response and "spans" in response["trace"]:
-            self._find_and_process_shard_query_spans(response["trace"]["spans"])
-
-        return {
+        result = {
             "weight": 1,
             "unit": "ops",
             "success": True,
-            "shard_query_duration_ns_total": self.total_shard_query_duration,
-            "shard_query_max_docs_total": self.total_max_docs,
-            "shard_query_slices_total": self.total_slices,
-            "shard_query_segments_total": self.total_segments,
-            "shard_query_duration_ns_max": self.max_shard_query_duration,
-            "shard_query_max_docs_max": self.max_max_docs,
-            "shard_query_slices_max": self.max_slices,
-            "shard_query_segments_max": self.max_segments,
+        }
+
+        slice_spans = []
+
+        def find_slice_spans(span):
+            if span.get("name", "").startswith("slice_"):
+                slice_spans.append(span)
+            for child in span.get("children", []):
+                find_slice_spans(child)
+
+        query_span = response.get("trace", {}).get("spans", {}).get()
+
+        if "trace" in response and "spans" in response["trace"]:
+            find_slice_spans(response["trace"]["spans"])
+
+
+
+        total_slice_duration = 0
+        total_max_docs = 0
+        total_segments = 0
+        max_slice_duration = 0
+        max_max_docs = 0
+        max_segments = 0
+
+        for span in slice_spans:
+            duration = span.get("duration_nanos", 0)
+            details = span.get("details", {})
+            max_docs = details.get("max_docs", 0)
+            segments = details.get("segments", 0)
+
+            total_slice_duration += duration
+            total_max_docs += max_docs
+            total_segments += segments
+
+            if duration > max_slice_duration:
+                max_slice_duration = duration
+            if max_docs > max_max_docs:
+                max_max_docs = max_docs
+            if segments > max_segments:
+                max_segments = segments
+
+        result["query"] = {
+            "slice_duration_ns_total": total_slice_duration,
+            "slice_max_docs_total": total_max_docs,
+            "slice_segments_total": total_segments,
+            "slice_count": len(slice_spans),
+            "slice_duration_ns_max": max_slice_duration,
+            "slice_max_docs_max": max_max_docs,
+            "slice_segments_max": max_segments,
         }
 
     def __repr__(self, *args, **kwargs):
-        return "traced-search"
+        return "search-trace"
 
 
 def register(registry):
