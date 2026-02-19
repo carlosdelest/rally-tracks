@@ -1,0 +1,74 @@
+{
+  "name": "delete-index",
+  "operation": "delete-index",
+  "tags": ["setup"]
+},
+{
+  "name": "create-index",
+  "operation": "create-index",
+  "tags": ["setup"]
+},
+{
+  "name": "check-cluster-health",
+  "operation": "check-cluster-health",
+  "tags": ["setup"]
+},
+{
+  "name": "initial-documents-indexing",
+  "operation": "initial-documents-indexing",
+  "tags": ["index"],
+  "warmup-time-period": {{ initial_indexing_bulk_warmup_time_period | default(40) | int }},
+  "clients": {{ initial_indexing_bulk_clients | default(5) | int }}
+},
+{
+  "name": "refresh-after-index",
+  "operation": "refresh-after-index",
+  "tags": ["index"]
+},
+{
+  "name": "force-merge",
+  "operation": "force-merge",
+  "tags": ["index"]
+},
+{
+  "name": "refresh-after-force-merge",
+  "operation": "refresh-after-force-merge",
+  "tags": ["index"]
+},
+{
+  "name": "wait-until-merges-finish-after-index",
+  "operation": "wait-until-merges-finish-after-index",
+  "tags": ["index"]
+},
+{
+  "name": "compare-query-string",
+  "operation": "compare-esql-dsl-query-string",
+  "clients": {{ compare_search_clients | default(1) | int }},
+  "warmup-iterations": {{ compare_warmup_iterations | default(10) }},
+  "iterations": {{ compare_iterations | default(100) }},
+  "tags": ["compare"]
+},
+{
+  "name": "compare-match",
+  "operation": "compare-esql-dsl-match",
+  "clients": {{ compare_search_clients | default(1) | int }},
+  "warmup-iterations": {{ compare_warmup_iterations | default(10) }},
+  "iterations": {{ compare_iterations | default(100) }},
+  "tags": ["compare"]
+},
+{
+  "name": "compare-match-phrase",
+  "operation": "compare-esql-dsl-match-phrase",
+  "clients": {{ compare_search_clients | default(1) | int }},
+  "warmup-iterations": {{ compare_warmup_iterations | default(10) }},
+  "iterations": {{ compare_iterations | default(100) }},
+  "tags": ["compare"]
+},
+{
+  "name": "compare-kql",
+  "operation": "compare-esql-dsl-kql",
+  "clients": {{ compare_search_clients | default(1) | int }},
+  "warmup-iterations": {{ compare_warmup_iterations | default(10) }},
+  "iterations": {{ compare_iterations | default(100) }},
+  "tags": ["compare"]
+}
