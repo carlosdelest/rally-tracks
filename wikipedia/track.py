@@ -476,8 +476,48 @@ class EsqlProfileRunner(runner.Runner):
 
 class TracedSearchRunner(runner.Runner):
     """
-    Executes a search query with tracing enabled and extracts metrics from the `slice_` spans in the trace output.
+    Executes a search query with tracing enabled and recursively summarizes the trace output.
     """
+
+    def _transform_trace(self, span):
+        # Group children by name to handle repetitions
+        children_by_name = {}
+        for child in span.get("children", []):
+            name = child.get("name")
+            if name not in children_by_name:
+                children_by_name[name] = []
+            children_by_name[name].append(child)
+
+        # Base data for this level
+        result = {"duration_ns": span.get("duration_nanos", 0)}
+
+        # Add details if they exist (for shard_query, slice, etc.)
+        if "details" in span:
+            for key, value in span["details"].items():
+                if isinstance(value, (int, float)):
+                    result[key] = value
+
+        # Recursively transform children
+        for name, children in children_by_name.items():
+            if len(children) == 1:
+                # Not repeated, just recurse
+                result[name] = self._transform_trace(children[0])
+            else:
+                # Repeated, aggregate them
+                aggregated = {}
+                # Get all numeric keys from the first transformed child
+                sample_transformed_child = self._transform_trace(children[0])
+                numeric_keys = [k for k, v in sample_transformed_child.items() if isinstance(v, (int, float))]
+
+                for key in numeric_keys:
+                    all_values = [self._transform_trace(c).get(key, 0) for c in children]
+                    aggregated[key] = max(all_values)
+                    aggregated[f"{key}_stats"] = {
+                        "sum": sum(all_values),
+                        "count": len(all_values),
+                    }
+                result[name] = aggregated
+        return result
 
     async def __call__(self, es, params):
         params, request_params, transport_params, headers = self._transport_request_params(params)
@@ -485,15 +525,9 @@ class TracedSearchRunner(runner.Runner):
 
         index = runner.mandatory(params, "index", self)
         body = runner.mandatory(params, "body", self)
-        body["trace"] = True  # Enable tracing for the search request
 
-        cache = params.get("cache")
-        if cache is not None:
-            request_params["request_cache"] = str(cache).lower()
-        elif self.serverless_mode and not self.serverless_operator:
-            request_params["request_cache"] = "false"
+        body["trace"] = True
 
-        # Mimic the path construction from the default Query runner, as _search does nor recognize trace param
         path_components = []
         if index:
             path_components.append(index)
@@ -508,69 +542,13 @@ class TracedSearchRunner(runner.Runner):
             headers=headers,
         )
 
-        slice_spans = []
-        query_spans = []
-
-        def find_spans(span):
-            if span.get("name", "").startswith("slice_"):
-                slice_spans.append(span)
-            if span.get("name", "") == "query":
-                query_spans.append(span)
-            for child in span.get("children", []):
-                find_spans(child)
+        final_result = {"weight": 1, "unit": "ops", "success": True}
 
         if "trace" in response and "spans" in response["trace"]:
-            find_spans(response["trace"]["spans"])
-        else:
-            return {"weight": 1, "unit": "ops", "success": True}
+            root_span = response["trace"]["spans"]
+            final_result[root_span.get("name")] = self._transform_trace(root_span)
 
-        # Aggregate slice metrics
-        total_slice_duration = sum(s.get("duration_nanos", 0) for s in slice_spans)
-        total_max_docs = sum(s.get("details", {}).get("max_docs", 0) for s in slice_spans)
-        total_segments = sum(s.get("details", {}).get("segments", 0) for s in slice_spans)
-        max_slice_duration = max(s.get("duration_nanos", 0) for s in slice_spans) if slice_spans else 0
-        max_max_docs = max(s.get("details", {}).get("max_docs", 0) for s in slice_spans) if slice_spans else 0
-        max_segments = max(s.get("details", {}).get("segments", 0) for s in slice_spans) if slice_spans else 0
-
-        # Aggregate query metrics
-        query_duration_ns = 0
-        query_rewrite_duration_ns = 0
-        create_context_duration_ns = 0
-        if query_spans:
-            # In case of multiple shards, there can be multiple query spans. We'll sum them up.
-            query_duration_ns = sum(q.get("duration_nanos", 0) for q in query_spans)
-            for query_span in query_spans:
-                for child in query_span.get("children", []):
-                    if child.get("name") == "query_rewrite":
-                        query_rewrite_duration_ns += child.get("duration_nanos", 0)
-                    if child.get("name") == "create_context":
-                        create_context_duration_ns += child.get("duration_nanos", 0)
-
-        return {
-            "weight": 1,
-            "unit": "ops",
-            "success": True,
-            "shard_query_phase": {
-                "duration_ns": query_duration_ns,
-                "rewrite_ns": query_rewrite_duration_ns,
-                "create_context_ns": create_context_duration_ns,
-                "slices": {
-                    "count": len(slice_spans),
-                    "duration": {
-                        "total_ns": total_slice_duration,
-                        "max_ns": max_slice_duration,
-                    },
-                    "max_docs": {
-                        "total_count": total_max_docs,
-                        "max_count": max_max_docs,
-                    },
-                    "segments": {
-                        "total_count": total_segments,
-                        "max_count": max_segments,
-                    },
-                },
-            },
-        }
+        return final_result
 
     def __repr__(self, *args, **kwargs):
         return "traced-search"
