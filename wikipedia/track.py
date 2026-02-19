@@ -501,52 +501,46 @@ class TracedSearchRunner(runner.Runner):
             headers=headers,
         )
 
-        result = {
+        slice_spans = []
+        query_spans = []
+
+        def find_spans(span):
+            if span.get("name", "").startswith("slice_"):
+                slice_spans.append(span)
+            if span.get("name") == "query":
+                query_spans.append(span)
+            for child in span.get("children", []):
+                find_spans(child)
+
+        if "trace" in response and "spans" in response["trace"]:
+            find_spans(response["trace"]["spans"])
+
+        # Aggregate slice metrics
+        total_slice_duration = sum(s.get("duration_nanos", 0) for s in slice_spans)
+        total_max_docs = sum(s.get("details", {}).get("max_docs", 0) for s in slice_spans)
+        total_segments = sum(s.get("details", {}).get("segments", 0) for s in slice_spans)
+        max_slice_duration = max(s.get("duration_nanos", 0) for s in slice_spans) if slice_spans else 0
+        max_max_docs = max(s.get("details", {}).get("max_docs", 0) for s in slice_spans) if slice_spans else 0
+        max_segments = max(s.get("details", {}).get("segments", 0) for s in slice_spans) if slice_spans else 0
+
+        # Aggregate query metrics
+        query_duration_ns = 0
+        query_rewrite_duration_ns = 0
+        create_context_duration_ns = 0
+        if query_spans:
+            # In case of multiple shards, there can be multiple query spans. We'll sum them up.
+            query_duration_ns = sum(q.get("duration_nanos", 0) for q in query_spans)
+            for query_span in query_spans:
+                for child in query_span.get("children", []):
+                    if child.get("name") == "query_rewrite":
+                        query_rewrite_duration_ns += child.get("duration_nanos", 0)
+                    if child.get("name") == "create_context":
+                        create_context_duration_ns += child.get("duration_nanos", 0)
+
+        return {
             "weight": 1,
             "unit": "ops",
             "success": True,
-        }
-
-        slice_spans = []
-
-        def find_slice_spans(span):
-            if span.get("name", "").startswith("slice_"):
-                slice_spans.append(span)
-            for child in span.get("children", []):
-                find_slice_spans(child)
-
-        query_span = response.get("trace", {}).get("spans", {}).get()
-
-        if "trace" in response and "spans" in response["trace"]:
-            find_slice_spans(response["trace"]["spans"])
-
-
-
-        total_slice_duration = 0
-        total_max_docs = 0
-        total_segments = 0
-        max_slice_duration = 0
-        max_max_docs = 0
-        max_segments = 0
-
-        for span in slice_spans:
-            duration = span.get("duration_nanos", 0)
-            details = span.get("details", {})
-            max_docs = details.get("max_docs", 0)
-            segments = details.get("segments", 0)
-
-            total_slice_duration += duration
-            total_max_docs += max_docs
-            total_segments += segments
-
-            if duration > max_slice_duration:
-                max_slice_duration = duration
-            if max_docs > max_max_docs:
-                max_max_docs = max_docs
-            if segments > max_segments:
-                max_segments = segments
-
-        result["query"] = {
             "slice_duration_ns_total": total_slice_duration,
             "slice_max_docs_total": total_max_docs,
             "slice_segments_total": total_segments,
@@ -554,10 +548,13 @@ class TracedSearchRunner(runner.Runner):
             "slice_duration_ns_max": max_slice_duration,
             "slice_max_docs_max": max_max_docs,
             "slice_segments_max": max_segments,
+            "query_duration_ns": query_duration_ns,
+            "query_rewrite_duration_ns": query_rewrite_duration_ns,
+            "create_context_duration_ns": create_context_duration_ns,
         }
 
     def __repr__(self, *args, **kwargs):
-        return "search-trace"
+        return "traced-search"
 
 
 def register(registry):
