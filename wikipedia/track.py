@@ -485,10 +485,15 @@ class TracedSearchRunner(runner.Runner):
 
         index = runner.mandatory(params, "index", self)
         body = runner.mandatory(params, "body", self)
+        body["trace"] = True  # Enable tracing for the search request
 
-        body["trace"] = True
+        cache = params.get("cache")
+        if cache is not None:
+            request_params["request_cache"] = str(cache).lower()
+        elif self.serverless_mode and not self.serverless_operator:
+            request_params["request_cache"] = "false"
 
-        # Mimic the path construction from the default Query runner
+        # Mimic the path construction from the default Query runner, as _search does nor recognize trace param
         path_components = []
         if index:
             path_components.append(index)
