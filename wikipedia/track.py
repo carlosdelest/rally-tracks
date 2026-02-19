@@ -285,6 +285,7 @@ class QueryParamSource(QueryIteratorParamSource):
         super().__init__(track, params, **kwargs)
         self._index_name = params.get("index", track.indices[0].name if len(track.indices) == 1 else "_all")
         self._cache = params.get("cache", False)
+        self._trace = params.get("trace", False)
         self._query_type = self._params["query-type"]
         self._detailed_results = params.get("detailed-results", False)
 
@@ -343,6 +344,7 @@ class QueryParamSource(QueryIteratorParamSource):
             "body": {
                 "query": query_body,
                 "size": self._params["size"],
+                "trace": self._trace,
             },
             "index": self._index_name,
             "cache": self._cache,

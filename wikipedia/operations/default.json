@@ -181,6 +181,7 @@
   "query-type": "match",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "detailed-results": true,
+  "trace": true,
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
 {
