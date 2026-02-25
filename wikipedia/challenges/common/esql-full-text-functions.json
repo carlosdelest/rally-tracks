@@ -43,7 +43,7 @@
 },
 {
   "name": "standalone-esql-match-search",
-  "operation": "query-esql-match-search",
+  "operation": "query-esql-profile-match-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
@@ -59,7 +59,7 @@
 },
 {
   "name": "standalone-esql-match-phrase-search",
-  "operation": "query-esql-match-phrase-search",
+  "operation": "query-esql-profile-match-phrase-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
@@ -75,7 +75,7 @@
 },
 {
   "name": "standalone-esql-qstr-search",
-  "operation": "query-esql-qstr-search",
+  "operation": "query-esql-profile-qstr-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
@@ -91,7 +91,7 @@
 },
 {
   "name": "standalone-esql-kql-search",
-  "operation": "query-esql-kql-search",
+  "operation": "query-esql-profile-kql-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
