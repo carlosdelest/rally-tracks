@@ -15,7 +15,14 @@ TRUE_KNN_FILENAME_1K: str = "queries-recall-1k.json.bz2"
 DEFAULT_K: Final[int] = 10
 
 
-async def extract_exact_neighbors(query_vector: List[float], index: str, max_size: int, vector_field: str, filter, client) -> List[str]:
+async def extract_exact_neighbors(
+    query_vector: List[float],
+    index: str,
+    max_size: int,
+    vector_field: str,
+    filter,
+    client,
+) -> List[str]:
     if filter is None:
         raise ValueError("Filter must be provided for exact neighbors extraction.")
     script_query = {
@@ -335,13 +342,26 @@ class EsqlProfileRunner(runner.Runner):
             headers = None
 
         # Execute the ESQL query with profiling
-        response = await es.perform_request(method="POST", path="/_query", headers=headers, body=body, params=request_params)
+        response = await es.perform_request(
+            method="POST",
+            path="/_query",
+            headers=headers,
+            body=body,
+            params=request_params,
+        )
         profile = response["profile"]
 
         # Build took_ms entries for each profiled phase
         result = {}
         if profile:
-            for phase_name in ["query", "planning", "parsing", "preanalysis", "dependency_resolution", "analysis"]:
+            for phase_name in [
+                "query",
+                "planning",
+                "parsing",
+                "preanalysis",
+                "dependency_resolution",
+                "analysis",
+            ]:
                 if phase_name in profile:
                     took_nanos = profile.get(phase_name, []).get("took_nanos", 0)
                     if took_nanos > 0:
@@ -384,7 +404,11 @@ class EsqlProfileRunner(runner.Runner):
                 plan_name = plan.get("description", "unknown")
 
                 # Extract optimization level metrics
-                for optimization in ["logical_optimization_nanos", "physical_optimization_nanos", "reduction_nanos"]:
+                for optimization in [
+                    "logical_optimization_nanos",
+                    "physical_optimization_nanos",
+                    "reduction_nanos",
+                ]:
                     optimization_nanos = plan.get(optimization, 0)
                     if optimization_nanos > 0:
                         # Remove "_nanos" suffix from the metric name
@@ -398,9 +422,90 @@ class EsqlProfileRunner(runner.Runner):
         return "esql-profile"
 
 
+class TracedSearchRunner(runner.Runner):
+    """
+    Executes a search query with tracing enabled and recursively summarizes the trace output.
+    """
+
+    def _transform_trace(self, span):
+        # Group children by name to handle repetitions
+        children_by_name = {}
+        for child in span.get("children", []):
+            name = child.get("name")
+            if name not in children_by_name:
+                children_by_name[name] = []
+            children_by_name[name].append(child)
+
+        # Base data for this level
+        result = {"duration_ns": span.get("duration_nanos", 0)}
+
+        # Add details if they exist (for shard_query, slice, etc.)
+        if "details" in span:
+            for key, value in span["details"].items():
+                if isinstance(value, (int, float)):
+                    result[key] = value
+
+        # Recursively transform children
+        for name, children in children_by_name.items():
+            if len(children) == 1:
+                # Not repeated, just recurse
+                result[name] = self._transform_trace(children[0])
+            else:
+                # Repeated, aggregate them
+                aggregated = {}
+                # Get all numeric keys from the first transformed child
+                sample_transformed_child = self._transform_trace(children[0])
+                numeric_keys = [k for k, v in sample_transformed_child.items() if isinstance(v, (int, float))]
+
+                for key in numeric_keys:
+                    all_values = [self._transform_trace(c).get(key, 0) for c in children]
+                    aggregated[key] = max(all_values)
+                    aggregated[f"{key}_stats"] = {
+                        "sum": sum(all_values),
+                        "count": len(all_values),
+                    }
+                result[name] = aggregated
+        return result
+
+    async def __call__(self, es, params):
+        params, request_params, transport_params, headers = self._transport_request_params(params)
+        es = es.options(**transport_params)
+
+        index = runner.mandatory(params, "index", self)
+        body = runner.mandatory(params, "body", self)
+
+        body["trace"] = True
+
+        path_components = []
+        if index:
+            path_components.append(index)
+        path_components.append("_search")
+        path = "/".join(path_components)
+
+        response = await es.perform_request(
+            method="GET",
+            path="/" + path,
+            params=request_params,
+            body=body,
+            headers=headers,
+        )
+
+        final_result = {"weight": 1, "unit": "ops", "success": True}
+
+        if "trace" in response and "spans" in response["trace"]:
+            root_span = response["trace"]["spans"]
+            final_result[root_span.get("name")] = self._transform_trace(root_span)
+
+        return final_result
+
+    def __repr__(self, *args, **kwargs):
+        return "traced-search"
+
+
 def register(registry):
     registry.register_param_source("knn-param-source", KnnParamSource)
     registry.register_param_source("esql-knn-param-source", ESQLKnnParamSource)
     registry.register_param_source("knn-recall-param-source", KnnRecallParamSource)
     registry.register_runner("knn-recall", KnnRecallRunner(), async_runner=True)
     registry.register_runner("esql-profile", EsqlProfileRunner(), async_runner=True)
+    registry.register_runner("traced-search", TracedSearchRunner(), async_runner=True)
