@@ -133,6 +133,36 @@
   "num-candidates": {{p_hybrid_knn_ops[i][1]}}
   {%- endif -%},
   "keep-all": true
+},
+{
+  {%- if p_hybrid_knn_ops[i][1] > 0 -%}
+    "name": "traced-hybrid-search-bm25-knn-{{p_hybrid_knn_ops[i][0]}}-{{p_hybrid_knn_ops[i][1]}}"
+  {%- else -%}
+    "name": "traced-hybrid-search-bm25-knn-{{p_hybrid_knn_ops[i][0]}}"
+  {%- endif -%},
+  "operation-type": "traced-search",
+  "param-source": "hybrid-bm25-knn-param-source",
+  "size": {{p_hybrid_knn_ops[i][0]}},
+  "k": {{p_hybrid_knn_ops[i][0]}}
+  {%- if p_hybrid_knn_ops[i][1] > 0 -%},
+  "num-candidates": {{p_hybrid_knn_ops[i][1]}}
+  {%- endif -%},
+  "source": false
+},
+{
+  {%- if p_hybrid_knn_ops[i][1] > 0 -%}
+    "name": "traced-hybrid-search-bm25-knn-{{p_hybrid_knn_ops[i][0]}}-{{p_hybrid_knn_ops[i][1]}}-source"
+  {%- else -%}
+    "name": "traced-hybrid-search-bm25-knn-{{p_hybrid_knn_ops[i][0]}}-source"
+  {%- endif -%},
+  "operation-type": "traced-search",
+  "param-source": "hybrid-bm25-knn-param-source",
+  "size": {{p_hybrid_knn_ops[i][0]}},
+  "k": {{p_hybrid_knn_ops[i][0]}}
+  {%- if p_hybrid_knn_ops[i][1] > 0 -%},
+  "num-candidates": {{p_hybrid_knn_ops[i][1]}}
+  {%- endif -%},
+  "source": true
 }
 {%- endfor -%},
 {
