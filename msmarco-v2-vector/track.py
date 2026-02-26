@@ -468,7 +468,7 @@ class EsqlProfileRunner(runner.Runner):
                 result[f"{driver_name}.took_ms"] = took_nanos / 1_000_000  # Convert to milliseconds
                 result[f"{driver_name}.cpu_ms"] = cpu_nanos / 1_000_000
 
-                # Extract operator-level metrics
+               # Extract operator-level metrics
                 operators = driver.get("operators", [])
                 for idx, operator in enumerate(operators):
                     operator_name = operator.get("operator", f"operator_{idx}")
@@ -482,6 +482,11 @@ class EsqlProfileRunner(runner.Runner):
                     if process_nanos > 0:
                         metric_key = f"{driver_name}.{safe_operator_name}.process_ms"
                         result[metric_key] = result.get(metric_key, 0) + process_nanos / 1_000_000  # Convert to milliseconds
+
+                    processed_slices = status.get("processed_slices", 0)
+                    if processed_slices > 0:
+                        metric_key = f"{driver_name}.{safe_operator_name}.processed_slices"
+                        result[metric_key] = result.get(metric_key, 0) + processed_slices
 
             # Extract plan-level metrics
             plans = profile.get("plans", [])
