@@ -72,9 +72,7 @@
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
   "tags": ["esql-profile"]
-}
-{% endif %}
-,
+},
 {
   "name": "standalone-query-trace-match-search",
   "operation": "query-trace-match-search",
