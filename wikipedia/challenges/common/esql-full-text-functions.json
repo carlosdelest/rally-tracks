@@ -42,101 +42,133 @@
   "tags": ["index"]
 },
 {
-  "name": "standalone-esql-match-search",
+  "name": "standalone-esql-match-search-source",
   "operation": "query-esql-match-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["esql"]
+  "tags": ["esql", "source"]
 },
 {
-  "name": "standalone-query-match-search",
-  "operation": "query-match-search",
+  "name": "standalone-esql-match-search-fields",
+  "operation": "query-esql-match-search-fields",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["query-dsl"]
+  "tags": ["esql", "fields"]
 },
 {
-  "name": "standalone-esql-match-phrase-search",
+  "name": "standalone-esql-match-phrase-search-source",
   "operation": "query-esql-match-phrase-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["esql"]
+  "tags": ["esql", "source"]
 },
 {
-  "name": "standalone-query-match-phrase-search",
-  "operation": "query-match-phrase-search",
+  "name": "standalone-esql-match-phrase-search-fields",
+  "operation": "query-esql-match-phrase-search-fields",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["query-dsl"]
+  "tags": ["esql", "fields"]
 },
 {
-  "name": "standalone-esql-qstr-search",
+  "name": "standalone-esql-qstr-search-source",
   "operation": "query-esql-qstr-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["esql"]
+  "tags": ["esql", "source"]
 },
 {
-  "name": "standalone-query-string-search",
-  "operation": "query-string-search",
+  "name": "standalone-esql-qstr-search-fields",
+  "operation": "query-esql-qstr-search-fields",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["query-dsl"]
+  "tags": ["esql", "fields"]
 },
 {
-  "name": "standalone-esql-kql-search",
+  "name": "standalone-esql-kql-search-source",
   "operation": "query-esql-kql-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["esql"]
+  "tags": ["esql", "source"]
 },
 {
-  "name": "standalone-query-kql-search",
-  "operation": "query-kql-search",
+  "name": "standalone-esql-kql-search-fields",
+  "operation": "query-esql-kql-search-fields",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ iterations | default(1000) }},
-  "tags": ["query-dsl"]
+  "tags": ["esql", "fields"]
 }
 {% if is_esql_profiling_enabled %}
 ,
 {
-  "name": "standalone-esql-profile-match-search",
+  "name": "standalone-esql-profile-match-search-source",
   "operation": "query-esql-profile-match-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
-  "tags": ["esql-profile"]
+  "tags": ["esql-profile", "source"]
 },
 {
-  "name": "standalone-esql-profile-match-phrase-search",
+  "name": "standalone-esql-profile-match-search-fields",
+  "operation": "query-esql-profile-match-search-fields",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ profile_iterations | default(100) }},
+  "tags": ["esql-profile", "fields"]
+},
+{
+  "name": "standalone-esql-profile-match-phrase-search-source",
   "operation": "query-esql-profile-match-phrase-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
-  "tags": ["esql-profile"]
+  "tags": ["esql-profile", "source"]
 },
 {
-  "name": "standalone-esql-profile-qstr-search",
+  "name": "standalone-esql-profile-match-phrase-search-fields",
+  "operation": "query-esql-profile-match-phrase-search-fields",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ profile_iterations | default(100) }},
+  "tags": ["esql-profile", "fields"]
+},
+{
+  "name": "standalone-esql-profile-qstr-search-source",
   "operation": "query-esql-profile-qstr-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
-  "tags": ["esql-profile"]
+  "tags": ["esql-profile", "source"]
 },
 {
-  "name": "standalone-esql-profile-kql-search",
+  "name": "standalone-esql-profile-qstr-search-fields",
+  "operation": "query-esql-profile-qstr-search-fields",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ profile_iterations | default(100) }},
+  "tags": ["esql-profile", "fields"]
+},
+{
+  "name": "standalone-esql-profile-kql-search-source",
   "operation": "query-esql-profile-kql-search",
   "clients": {{ standalone_search_clients | default(20) | int }},
   "warmup-iterations": {{ warmup_iterations | default(100) }},
   "iterations": {{ profile_iterations | default(100) }},
-  "tags": ["esql-profile"]
+  "tags": ["esql-profile", "source"]
+},
+{
+  "name": "standalone-esql-profile-kql-search-fields",
+  "operation": "query-esql-profile-kql-search-fields",
+  "clients": {{ standalone_search_clients | default(20) | int }},
+  "warmup-iterations": {{ warmup_iterations | default(100) }},
+  "iterations": {{ profile_iterations | default(100) }},
+  "tags": ["esql-profile", "fields"]
 }
 {% endif %}

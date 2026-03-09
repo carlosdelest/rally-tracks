@@ -168,7 +168,7 @@
   },
   {
     "name": "esql-full-text-functions",
-    "description": "Indexes and executes ES|QL and Query DSL full text functions queries",
+    "description": "Indexes and executes ES|QL full text function queries in two retrieval modes: METADATA _source and all fields",
     "default": false,
     "schedule": [
       {{ rally.collect(parts="common/esql-full-text-functions.json") }}

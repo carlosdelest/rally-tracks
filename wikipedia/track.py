@@ -215,7 +215,6 @@ class RetrieverParamSource(QueryIteratorParamSource):
             return self.params()
 
 
-# TODO Add other queries, check default fields for search. Compare them with other DSL queries
 class EsqlSearchParamSource(QueryIteratorParamSource):
     def __init__(self, track, params, **kwargs):
         super().__init__(track, params, **kwargs)
@@ -223,6 +222,9 @@ class EsqlSearchParamSource(QueryIteratorParamSource):
         self._search_fields = self._params["search-fields"]
         self._size = params.get("size", 20)
         self._query_type = self._params["query-type"]
+        # "source" mode: retrieves METADATA _source as the only output field
+        # "fields" mode: retrieves all fields via ESQL column projection
+        self._retrieve_mode = params.get("retrieve-mode", "source")
 
     def params(self):
         try:
@@ -238,9 +240,12 @@ class EsqlSearchParamSource(QueryIteratorParamSource):
             else:
                 raise ValueError("Unknown query type: " + self._query_type)
 
-            return {
-                "query": f"FROM {self._index_name} METADATA _id, _score, _source | WHERE { query_body } | KEEP _id, _score, _source | SORT _score DESC | LIMIT { self._size }",
-            }
+            if self._retrieve_mode == "source":
+                esql_query = f"FROM {self._index_name} METADATA _id, _score, _source | WHERE { query_body } | KEEP _id, _score, _source | SORT _score DESC | LIMIT { self._size }"
+            else:
+                esql_query = f"FROM {self._index_name} METADATA _id, _score | WHERE { query_body } | SORT _score DESC | LIMIT { self._size }"
+
+            return {"query": esql_query}
 
         except StopIteration:
             self._queries_iterator = iter(self._sample_queries)

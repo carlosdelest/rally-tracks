@@ -154,6 +154,16 @@
   "operation-type": "esql",
   "param-source": "esql-search",
   "query-type": "query-string",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-qstr-search-fields",
+  "operation-type": "esql",
+  "param-source": "esql-search",
+  "query-type": "query-string",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
@@ -162,6 +172,16 @@
   "operation-type": "esql-profile",
   "param-source": "esql-search",
   "query-type": "query-string",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-profile-qstr-search-fields",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "query-string",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
@@ -179,6 +199,16 @@
   "operation-type": "esql",
   "param-source": "esql-search",
   "query-type": "match",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-match-search-fields",
+  "operation-type": "esql",
+  "param-source": "esql-search",
+  "query-type": "match",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
@@ -187,6 +217,16 @@
   "operation-type": "esql-profile",
   "param-source": "esql-search",
   "query-type": "match",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-profile-match-search-fields",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "match",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
@@ -204,6 +244,16 @@
   "operation-type": "esql",
   "param-source": "esql-search",
   "query-type": "match_phrase",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-match-phrase-search-fields",
+  "operation-type": "esql",
+  "param-source": "esql-search",
+  "query-type": "match_phrase",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
@@ -212,6 +262,16 @@
   "operation-type": "esql-profile",
   "param-source": "esql-search",
   "query-type": "match_phrase",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-profile-match-phrase-search-fields",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "match_phrase",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
@@ -229,6 +289,16 @@
   "operation-type": "esql",
   "param-source": "esql-search",
   "query-type": "kql",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-kql-search-fields",
+  "operation-type": "esql",
+  "param-source": "esql-search",
+  "query-type": "kql",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
@@ -237,6 +307,16 @@
   "operation-type": "esql-profile",
   "param-source": "esql-search",
   "query-type": "kql",
+  "retrieve-mode": "source",
+  "size" : {{ query_string_search_page_size | default(20) | int }},
+  "search-fields" : "{{ query_string_search_fields | default("*") }}"
+},
+{
+  "name": "query-esql-profile-kql-search-fields",
+  "operation-type": "esql-profile",
+  "param-source": "esql-search",
+  "query-type": "kql",
+  "retrieve-mode": "fields",
   "size" : {{ query_string_search_page_size | default(20) | int }},
   "search-fields" : "{{ query_string_search_fields | default("*") }}"
 },
